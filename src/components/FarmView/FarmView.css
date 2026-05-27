@@ -7,32 +7,43 @@
   overflow: hidden; 
 }
 
+/* 侧边栏基础样式：顶天立地，白色背景，内侧分割线 */
 .sidebar {
   position: absolute;
-  top: 24px;
-  bottom: 24px;
-  width: 280px; /* 稍微加宽面板以容纳排版 */
+  top: 0;               /* 与顶部导航栏底部连接 */
+  bottom: 0;            /* 与屏幕底部连接 */
+  width: 280px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   z-index: 30;          
-  pointer-events: none;
+  pointer-events: none; /* 允许穿透到3D场景，卡片自己可点 */
+  background: #ffffff;  /* 纯白背景覆盖3D场景 */
+  padding: 24px;        /* 保持卡片与屏幕边缘原有距离（原 top/left 24px 效果） */
+  box-sizing: border-box;
+  overflow-y: auto;     /* 内容过多可滚动，不影响布局 */
+  scrollbar-width: thin; /* 可选，保持美观 */
 }
 
+/* 左侧边栏：紧贴左边缘，右侧加分割线 */
 .sidebar.left {
-  left: 24px;
+  left: 0;
+  border-right: 1px solid #e2e8f0; /* 分割线，线左侧为白色区域 */
 }
 
+/* 右侧边栏：紧贴右边缘，左侧加分割线 */
 .sidebar.right {
-  right: 24px;
+  right: 0;
+  border-left: 1px solid #e2e8f0;  /* 分割线，线右侧为白色区域 */
 }
 
+/* 卡片样式增强：保留原有全部样式，增加更明显的投影以与白色背景区分 */
 .card {
-  /* 采用图中极其干净的纯白背景与轻柔阴影 */
   background: #ffffff;
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  /* 加强阴影：增加一层较深、较大模糊半径的阴影，使卡片立体突出 */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.03);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
   cursor: pointer;
@@ -42,7 +53,7 @@
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.18), 0 5px 12px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
@@ -102,7 +113,7 @@
 
 .mock-btn {
   margin-top: 16px;
-  background: #1e88e5; /* 按钮改为图中标志性的亮蓝色 */
+  background: #1e88e5;
   border: none;
   padding: 10px 12px;
   border-radius: 8px;

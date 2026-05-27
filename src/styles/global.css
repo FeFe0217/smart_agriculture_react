@@ -15,6 +15,7 @@
   padding: 0 20px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   flex-shrink: 0;
+  border-bottom: 2px solid #c8e6c9;
 }
 
 .nav-left {
