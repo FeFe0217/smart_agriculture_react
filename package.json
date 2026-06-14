@@ -1,4 +1,5 @@
 {
+  "homepage": "https://fefe0217.github.io/smart_agriculture_react/",
   "name": "smart-agriculture-react",
   "private": true,
   "version": "0.0.0",
@@ -6,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@react-three/drei": "^9.88.0",
