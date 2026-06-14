@@ -20,13 +20,6 @@
   margin: 0;
 }
 
-/* 处方图网格 */
-.prescription-grid, .yield-quality-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
-}
 
 .prescription-plot, .yq-plot {
   aspect-ratio: 1;
@@ -63,14 +56,6 @@
   margin-top: 4px;
 }
 
-/* 图例 */
-.prescription-legend {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  margin-top: 15px;
-  font-size: 12px;
-}
 
 .legend-color {
   display: inline-block;
@@ -157,12 +142,6 @@
   border-radius: 8px;
 }
 
-/* 产量品质切换 */
-.toggle-buttons {
-  display: flex;
-  gap: 8px;
-}
-
 .toggle-buttons button {
   padding: 6px 12px;
   border: 1px solid #4caf50;
@@ -175,15 +154,4 @@
 .toggle-buttons button.active {
   background: #4caf50;
   color: white;
-}
-
-.summary-info {
-  margin-top: 20px;
-  padding: 12px;
-  background: #e3f2fd;
-  border-radius: 8px;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  font-size: 13px;
 }
