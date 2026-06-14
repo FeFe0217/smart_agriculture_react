@@ -1,4 +1,3 @@
-// src/services/mockApi.js
 import { SOIL_PARAMS, IRRIGATION_PRESCRIPTION, YIELD_QUALITY_DATA } from '../utils/constants';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));

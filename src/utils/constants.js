@@ -1,6 +1,4 @@
-// src/utils/constants.js
-
-// 土壤参数模拟数据（16个地块，4x4）
+// 土壤参数（与项目一完全一致，共16块）
 export const SOIL_PARAMS = {
   '1': { temperature: 22.5, humidity: 62, deficiency: 15 },
   '2': { temperature: 23.1, humidity: 58, deficiency: 35 },
@@ -20,7 +18,7 @@ export const SOIL_PARAMS = {
   '16': { temperature: 22.4, humidity: 41, deficiency: 23 },
 };
 
-// 灌溉处方数据（16个地块）
+// 灌溉处方数据（16块）
 export const IRRIGATION_PRESCRIPTION = {
   '1': { water: 8, fertilizer: 2.5 },
   '2': { water: 12, fertilizer: 3.2 },
@@ -40,7 +38,7 @@ export const IRRIGATION_PRESCRIPTION = {
   '16': { water: 8, fertilizer: 2.6 },
 };
 
-// 产量品质数据（16个地块）
+// 产量品质数据（16块）
 export const YIELD_QUALITY_DATA = {
   '1': { yield: 920, sugar: 14.5 },
   '2': { yield: 850, sugar: 13.2 },

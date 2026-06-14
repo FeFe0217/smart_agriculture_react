@@ -1,7 +1,6 @@
-// src/components/FarmView/FarmView.jsx
 import React, { useState, useEffect } from 'react';
 import SplitPane from '../Layout/SplitPane';
-import ThreeFarmGrid from './ThreeFarmGrid';       // 替换原 FarmGrid
+import ThreeFarmGrid from './ThreeFarmGrid';
 import PredictionPanel from '../DetailPanels/PredictionPanel';
 import PrescriptionPanel from '../DetailPanels/PrescriptionPanel';
 import YieldQualityPanel from '../DetailPanels/YieldQualityPanel';
@@ -9,7 +8,6 @@ import AlertPanel from '../DetailPanels/AlertPanel';
 import { getFieldList, getSoilParams } from '../../services/mockApi';
 import './FarmView.css';
 
-// 小型预测曲线组件（保持不变）
 function MiniPredictChart() {
   const canvasRef = React.useRef(null);
   React.useEffect(() => {
@@ -63,7 +61,6 @@ function MiniPredictChart() {
   return <canvas ref={canvasRef} width={200} height={80} style={{ width: '100%', height: '80px' }} />;
 }
 
-// 小型产量柱状图（保持不变）
 function MiniYieldChart() {
   const canvasRef = React.useRef(null);
   React.useEffect(() => {
@@ -157,7 +154,6 @@ function FarmView() {
     <div className="farm-main-container">
       <ThreeFarmGrid fieldsData={fields} onPlotClick={handlePlotClick} />
       
-      {/* 左侧边栏 */}
       <div className="sidebar left">
         <div className="card" onClick={() => setActiveDetail('prediction')}>
           <div className="card-header">📊 水分预测</div>
@@ -172,7 +168,7 @@ function FarmView() {
           <div className="card-content">
             <div className="alert-summary">
               <span className="alert-count">3个田块</span>
-              <span className="alert-level danger">严重: 8,15号</span>
+              <span className="alert-level danger">严重: 8,18号</span>
             </div>
             <div className="alert-message">8号田缺水度72%，建议立即灌溉</div>
             <div className="alert-message">预计24小时内将新增2个预警</div>
@@ -189,7 +185,6 @@ function FarmView() {
         </div>
       </div>
 
-      {/* 右侧边栏 */}
       <div className="sidebar right">
         <div className="card" onClick={() => setActiveDetail('prescription')}>
           <div className="card-header">💧 灌溉处方图</div>
@@ -219,7 +214,6 @@ function FarmView() {
         </div>
       </div>
 
-      {/* 点击柱体的弹窗 */}
       {popup.show && (
         <div className="popup-overlay" onClick={closePopup}>
           <div className="popup-content" onClick={e => e.stopPropagation()}>

@@ -3,52 +3,56 @@
   width: 100%;
   height: 100%;
   position: relative;
-  /* 背景交由3D外层容器控制径向渐变 */
-  overflow: hidden; 
+  background-image: url('/assets/farm-aerial-base.png');
+  background-size: cover;
+  background-position: center 51%;
+  background-repeat: no-repeat;
+  background-color: #f7f9fb;
+  overflow: hidden;
 }
 
-/* 侧边栏基础样式：顶天立地，白色背景，内侧分割线 */
+/* 让 Three.js canvas 完全透明，透出背景图 */
+canvas {
+  background: transparent !important;
+}
+
+/* 侧边栏基础样式 */
 .sidebar {
   position: absolute;
-  top: 0;               /* 与顶部导航栏底部连接 */
-  bottom: 0;            /* 与屏幕底部连接 */
+  top: 0;
+  bottom: 0;
   width: 280px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  z-index: 30;          
-  pointer-events: none; /* 允许穿透到3D场景，卡片自己可点 */
-  background: #ffffff;  /* 纯白背景覆盖3D场景 */
-  padding: 24px;        /* 保持卡片与屏幕边缘原有距离（原 top/left 24px 效果） */
+  z-index: 30;
+  pointer-events: none;
+  background: #ffffff;
+  padding: 24px;
   box-sizing: border-box;
-  overflow-y: auto;     /* 内容过多可滚动，不影响布局 */
-  scrollbar-width: thin; /* 可选，保持美观 */
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
-/* 左侧边栏：紧贴左边缘，右侧加分割线 */
 .sidebar.left {
   left: 0;
-  border-right: 1px solid #e2e8f0; /* 分割线，线左侧为白色区域 */
+  border-right: 1px solid #e2e8f0;
 }
 
-/* 右侧边栏：紧贴右边缘，左侧加分割线 */
 .sidebar.right {
   right: 0;
-  border-left: 1px solid #e2e8f0;  /* 分割线，线右侧为白色区域 */
+  border-left: 1px solid #e2e8f0;
 }
 
-/* 卡片样式增强：保留原有全部样式，增加更明显的投影以与白色背景区分 */
 .card {
   background: #ffffff;
   border-radius: 16px;
   padding: 18px;
-  /* 加强阴影：增加一层较深、较大模糊半径的阴影，使卡片立体突出 */
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.03);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
   cursor: pointer;
   pointer-events: auto;
-  position: relative;
 }
 
 .card:hover {
@@ -66,7 +70,6 @@
   gap: 8px;
 }
 
-/* 模拟图片中标题左侧的小绿点或图标色 */
 .card-header::before {
   content: '';
   display: inline-block;
@@ -82,7 +85,6 @@
   line-height: 1.8;
 }
 
-/* 预警面板样式强化 */
 .alert-summary {
   display: flex;
   justify-content: space-between;
@@ -194,29 +196,13 @@
   font-size: 24px;
   color: #999;
   cursor: pointer;
-  transition: color 0.2s;
 }
 
 .close-popup:hover {
   color: #333;
 }
 
-/* 让 Three.js 容器透明，显示 CSS 背景图 */
-.farm-main-container {
-  position: relative;
-  background-image: url('/assets/farm-aerial-base.png');
-  background-size: cover;
-  background-position: center 51%;
-  background-repeat: no-repeat;
-  background-color: #f7f9fb; /* 后备色 */
-}
-
-/* 确保 canvas 完全透明 */
-canvas {
-  background: transparent !important;
-}
-
-/* 仿项目一标签样式 */
+/* 项目一风格的3D标签 */
 .farm3d-label {
   display: grid;
   justify-items: center;
