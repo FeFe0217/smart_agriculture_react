@@ -55,7 +55,7 @@ function YieldQualityPanel() {
         {/* 网格：固定最大宽度，居中，每个地块同时显示产量和糖度 */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '8px',
           marginBottom: '20px',
           maxWidth: '500px',

@@ -7,7 +7,7 @@ export async function getFieldList() {
   await delay(300);
   const fields = Object.keys(SOIL_PARAMS).map(key => ({
     fieldId: key,
-    fieldName: `${Math.floor((key-1)/5)+1}区${((key-1)%5)+1}号田`,
+    fieldName: `${Math.floor((key-1)/4)+1}区${((key-1)%4)+1}号田`,
     area: 2.5,
     cropType: '番茄',
     currentMoisture: SOIL_PARAMS[key].humidity,
@@ -79,7 +79,7 @@ export async function getAlertList() {
       alerts.push({
         alertId: `ALT_${key}`,
         fieldId: key,
-        fieldName: `${Math.floor((key-1)/5)+1}区${((key-1)%5)+1}号田`,
+        fieldName: `${Math.floor((key-1)/4)+1}区${((key-1)%4)+1}号田`,
         level: params.deficiency >= 50 ? 'danger' : 'warning',
         currentMoisture: params.humidity,
         deficitDegree: params.deficiency / 100,

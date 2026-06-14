@@ -172,7 +172,7 @@ function FarmView() {
           <div className="card-content">
             <div className="alert-summary">
               <span className="alert-count">3个田块</span>
-              <span className="alert-level danger">严重: 8,18号</span>
+              <span className="alert-level danger">严重: 8,15号</span>
             </div>
             <div className="alert-message">8号田缺水度72%，建议立即灌溉</div>
             <div className="alert-message">预计24小时内将新增2个预警</div>

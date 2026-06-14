@@ -1,372 +1,476 @@
-import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Html } from '@react-three/drei';
+// src/components/FarmView/ThreeFarmGrid.jsx
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-const ROWS = 4;
-const COLS = 5;
-const PLOT_WIDTH = 1.4;
-const PLOT_DEPTH = 1.4;
-const GAP_WIDTH = 0.12;
-const SOIL_WIDTH = PLOT_WIDTH - GAP_WIDTH;
-const SOIL_DEPTH = PLOT_DEPTH - GAP_WIDTH;
-const BOX_WIDTH = 0.7;
-const BOX_DEPTH = 0.7;
-const MIN_HEIGHT = 0.2;
-const MAX_HEIGHT = 2.5;
-const GROUND_Y = 0;
-const EXTRA_RINGS = 12;
+// ==================== 项目一的完整常量 ====================
+const PLATFORM_TOP_Y = 0;
+const BLOCK_WIDTH = 2.9;
+const BLOCK_DEPTH = 2.35;
+const BLOCK_HEIGHT = 0.16;
+const BLOCK_SPACING_X = 3.75;
+const BLOCK_SPACING_Z = 3.75;
+const BLOCK_ROW_OFFSET_X = 0.42;
+const GRID_CENTER_COL = 1.5;
+const GRID_CENTER_ROW = 1.5;
+const GRID_Z_OFFSET = 0;
+const GRID_OFFSET_X = 0;
+const GRID_OFFSET_Z = 3.7;
 
-// ==================== 核心改进：密集植被与严格边界控制 ====================
-const VegetationAndSoil = ({ mainPlots, extraPlots }) => {
-  const soilCount = mainPlots.length + extraPlots.length;
-  
-  // 改进点 2：显著提高作物行列数量，使其更加密集茂盛
-  const ROWS_PER_PLOT = 8;    
-  const BUSHES_PER_ROW = 12;  
-  const vegCount = soilCount * ROWS_PER_PLOT * BUSHES_PER_ROW;
+const COLUMN_MIN_HEIGHT = 1.1;
+const COLUMN_HEIGHT_RANGE = 3.8;
+const COLUMN_MODEL_WIDTH = 1.26;
+const COLUMN_MODEL_DEPTH = 1.26;
+const COLUMN_HEIGHT_SCALE = 1.06;
+const COLUMN_MODEL_PATH = '/assets/column-outlined.glb';
 
-  const baseMeshRef = useRef();
-  const vegMeshRef = useRef();
-
-  useEffect(() => {
-    if (!baseMeshRef.current || !vegMeshRef.current) return;
-
-    const dummy = new THREE.Object3D();
-    const colorObj = new THREE.Color();
-    
-    // 改进点 3：地块的初始底色变更为自然的深草绿色
-    const BASE_SOIL_COLOR = new THREE.Color('#0a2302'); 
-
-    // 改进点 4：将作物颜色严格统一为两大核心自然绿（嫩绿与深绿）
-    const CROP_COLOR_1 = new THREE.Color('#011904'); // 颜色一：鲜嫩翠绿
-    const CROP_COLOR_2 = new THREE.Color('#022104'); // 颜色二：浓郁油绿
-
-    let baseIdx = 0;
-    let vegIdx = 0;
-
-    const addPlot = (plot, isMain) => {
-      const width = isMain ? SOIL_WIDTH : PLOT_WIDTH;
-      const depth = isMain ? SOIL_DEPTH : PLOT_DEPTH;
-
-      // 1. 生成初始绿色地块基底
-      dummy.position.set(plot.x, GROUND_Y - 0.02, plot.z);
-      dummy.scale.set(width, 0.05, depth);
-      dummy.updateMatrix();
-      baseMeshRef.current.setMatrixAt(baseIdx, dummy.matrix);
-      
-      // 让地块底色有极微弱的明暗错落，显得更有真实土地的质感
-      colorObj.copy(BASE_SOIL_COLOR).offsetHSL(0, 0, (Math.random() - 0.5) * 0.03);
-      baseMeshRef.current.setColorAt(baseIdx, colorObj);
-      baseIdx++;
-
-      // 2. 生成密集的 3D 作物（严格控制边界，绝不越界到路基上）
-      // 改进点 1：设置 0.12 的安全边距，确保边缘的作物加上自身半径后也绝不碰触白色路基或水渠
-      const MARGIN = 0.12; 
-      const safeWidth = width - 2 * MARGIN;
-      const safeDepth = depth - 2 * MARGIN;
-
-      for (let r = 0; r < ROWS_PER_PLOT; r++) {
-        const zPercent = ROWS_PER_PLOT > 1 ? r / (ROWS_PER_PLOT - 1) : 0.5;
-        const zOffset = -safeDepth / 2 + zPercent * safeDepth;
-
-        for (let b = 0; b < BUSHES_PER_ROW; b++) {
-          const xPercent = BUSHES_PER_ROW > 1 ? b / (BUSHES_PER_ROW - 1) : 0.5;
-          const xOffset = -safeWidth / 2 + xPercent * safeWidth;
-
-          // 微小自然的有机抖动，但严格控制在安全防线内
-          const randX = (Math.random() - 0.5) * 0.02;
-          const randZ = (Math.random() - 0.5) * 0.02;
-          const randScale = 0.5 + Math.random() * 0.5; // 产生高低有致的生长视觉
-
-          const finalLocalX = xOffset + randX;
-          const finalLocalZ = zOffset + randZ;
-
-          dummy.position.set(
-            plot.x + finalLocalX,
-            GROUND_Y + 0.01 + randScale * 0.05, // 根据缩放微调高度，使其错落站立
-            plot.z + finalLocalZ
-          );
-          
-          // 缩放压扁成长条形或低矮灌木状，模拟真实的作物形态
-          dummy.scale.set(randScale * 0.08, randScale * 0.06, randScale * 0.08);
-          dummy.updateMatrix();
-          vegMeshRef.current.setMatrixAt(vegIdx, dummy.matrix);
-
-          // 改进点 4：二选一随机着色，保证地块内只有两大作物色系
-          const chosenColor = Math.random() > 0.5 ? CROP_COLOR_1 : CROP_COLOR_2;
-          vegMeshRef.current.setColorAt(vegIdx, chosenColor);
-          vegIdx++;
-        }
-      }
-    };
-
-    mainPlots.forEach((p) => addPlot(p, true));
-    extraPlots.forEach((p) => addPlot(p, false));
-
-    baseMeshRef.current.instanceMatrix.needsUpdate = true;
-    if (baseMeshRef.current.instanceColor) baseMeshRef.current.instanceColor.needsUpdate = true;
-    vegMeshRef.current.instanceMatrix.needsUpdate = true;
-    if (vegMeshRef.current.instanceColor) vegMeshRef.current.instanceColor.needsUpdate = true;
-  }, [mainPlots, extraPlots]);
-
-  return (
-    <group>
-      {/* 绿色地块基底网格：完全哑光 (roughness=1.0) */}
-      <instancedMesh ref={baseMeshRef} args={[null, null, soilCount]} receiveShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial roughness={1.0} metalness={0.0} />
-      </instancedMesh>
-      
-      {/* 高密度 3D 农作物：完全哑光，无任何反光倒影 */}
-      <instancedMesh ref={vegMeshRef} args={[null, null, vegCount]} receiveShadow>
-        <sphereGeometry args={[1, 7, 7]} />
-        <meshStandardMaterial roughness={1.0} metalness={0.0} />
-      </instancedMesh>
-    </group>
-  );
+// 颜色常量（从项目一精确复制）
+const COLUMN_FILL_COLORS = {
+  blue: '#0076d9',
+  green: '#009b4e',
+  yellow: '#d59a00',
+  orange: '#e9691d',
+  red: '#d92c1f',
 };
-// ====================================================================
-
-// 数据测量柱体组件
-const PlotBox = ({ plotNumber, humidity, position, onClick }) => {
-  const meshRef = useRef();
-  const height = MIN_HEIGHT + (humidity / 100) * (MAX_HEIGHT - MIN_HEIGHT);
-  const color = humidity < 30 ? '#af170c' : (humidity <= 60 ? '#a08b12' : '#0861aa');
-  const [isHovered, setIsHovered] = useState(false);
-
-  useFrame(({ clock }) => {
-    if (meshRef.current && humidity < 30) {
-      const offset = Math.sin(clock.elapsedTime * 8) * 0.02;
-      meshRef.current.position.y = GROUND_Y + height / 2 + offset;
-    } else if (meshRef.current) {
-      meshRef.current.position.y = GROUND_Y + height / 2;
-    }
-  });
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    onClick(plotNumber);
-  };
-
-  return (
-    <group position={[position.x, GROUND_Y, position.z]}>
-      <mesh
-        ref={meshRef}
-        position={[0, height / 2, 0]}
-        onClick={handleClick}
-        onPointerOver={() => setIsHovered(true)}
-        onPointerOut={() => setIsHovered(false)}
-        castShadow
-        receiveShadow
-      >
-        <boxGeometry args={[BOX_WIDTH, height, BOX_DEPTH]} />
-        <meshStandardMaterial 
-          color={color} 
-          roughness={0.6} 
-          metalness={0.0} 
-          emissive={humidity < 30 ? '#330000' : '#000000'} 
-          emissiveIntensity={humidity < 30 ? 0.3 : 0} 
-        />
-      </mesh>
-      <Text position={[0, height + 0.15, 0]} fontSize={0.22} color="#333333" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#ffffff">
-        {`${plotNumber}`}
-      </Text>
-      <Text position={[0, height * 0.65, 0]} fontSize={0.18} color="#333333" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#ffffff">
-        {`${humidity.toFixed(0)}%`}
-      </Text>
-      {humidity < 30 && (
-        <Text position={[0, height + 0.35, 0]} fontSize={0.16} color="#cc0000" anchorX="center" anchorY="middle" fontWeight="bold">
-          ⚠️
-        </Text>
-      )}
-      {isHovered && (
-        <Html position={[0, height + 0.55, 0]} center distanceFactor={10}>
-          <div style={{ background: 'rgba(0,0,0,0.85)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-            湿度: {humidity.toFixed(1)}%<br/>
-            {humidity < 30 ? '⚠️ 严重缺水' : humidity <= 60 ? '⚠️ 缺水风险' : '✓ 水分正常'}
-          </div>
-        </Html>
-      )}
-    </group>
-  );
+const COLUMN_EMISSIVE_COLORS = {
+  blue: '#10a9ff',
+  green: '#23d36b',
+  yellow: '#ffc928',
+  orange: '#ff8a2b',
+  red: '#ff5038',
+};
+const COLUMN_OUTLINE_COLORS = {
+  blue: '#aee6ff',
+  green: '#a9f5c8',
+  yellow: '#ffdf66',
+  orange: '#ffbf7a',
+  red: '#ffad9f',
+};
+const COLUMN_RIM_COLORS = {
+  blue: '#004b94',
+  green: '#075f35',
+  yellow: '#7a5400',
+  orange: '#8a340d',
+  red: '#8b160f',
 };
 
-// 蓝色灌溉水渠
-const WaterGap = ({ position, width, depth, height = 0.02 }) => {
-  return (
-    <mesh position={[position.x, GROUND_Y - 0.01, position.z]} receiveShadow>
-      <boxGeometry args={[width, height, depth]} />
-      <meshStandardMaterial color="#1990d4" roughness={0.9} metalness={0.0} />
-    </mesh>
+// ==================== 项目一的映射函数 ====================
+function getRiskLevel(moisture) {
+  if (moisture <= 20) return 'severe';
+  if (moisture <= 35) return 'high';
+  if (moisture <= 50) return 'medium';
+  return 'low';
+}
+
+function getColorToken(moisture, risk) {
+  if (risk === 'severe') return 'red';
+  if (risk === 'high') return 'orange';
+  if (risk === 'medium') return 'yellow';
+  return 'blue';
+}
+
+function getHeightValue(moisture) {
+  return Math.max(20, Math.min(100, Math.round(20 + moisture * 0.8)));
+}
+
+function getColumnHeight(moisture) {
+  const heightValue = getHeightValue(moisture);
+  return COLUMN_MIN_HEIGHT + (heightValue / 100) * COLUMN_HEIGHT_RANGE;
+}
+
+// ==================== 项目一的几何辅助函数 ====================
+function createRoundedBox(width, height, depth) {
+  return new THREE.BoxGeometry(width, height, depth, 5, 1, 5);
+}
+
+// ==================== 项目一的装饰层 ====================
+function buildColumnOverlay(width, height, depth, colorToken) {
+  const group = new THREE.Group();
+  const fillColor = COLUMN_FILL_COLORS[colorToken];
+  const outlineColor = COLUMN_OUTLINE_COLORS[colorToken];
+  const glowColor = COLUMN_EMISSIVE_COLORS[colorToken];
+  const rimColor = COLUMN_RIM_COLORS[colorToken];
+
+  const shell = new THREE.Mesh(
+    createRoundedBox(width * 0.92, height * 0.98, depth * 0.92),
+    new THREE.MeshPhysicalMaterial({
+      color: fillColor,
+      emissive: glowColor,
+      emissiveIntensity: 0.05,
+      metalness: 0,
+      opacity: 0.86,
+      roughness: 0.76,
+      transparent: true,
+    })
   );
-};
+  shell.renderOrder = 2;
 
-// 白色路基边框
-const RoadBaseBorder = () => {
-  const totalWidth = COLS * PLOT_WIDTH;
-  const totalDepth = ROWS * PLOT_DEPTH;
-  const borderWidth = 0.18;
-  const borderHeight = 0.12;
-  const borderY = GROUND_Y - 0.01;
-
-  const pieces = [
-    { position: { x: 0, z: -totalDepth / 2 - borderWidth / 2 }, width: totalWidth + borderWidth, depth: borderWidth },
-    { position: { x: 0, z: totalDepth / 2 + borderWidth / 2 }, width: totalWidth + borderWidth, depth: borderWidth },
-    { position: { x: -totalWidth / 2 - borderWidth / 2, z: 0 }, width: borderWidth, depth: totalDepth + borderWidth },
-    { position: { x: totalWidth / 2 + borderWidth / 2, z: 0 }, width: borderWidth, depth: totalDepth + borderWidth },
+  const edgePoints = [
+    new THREE.Vector3(-width / 2, height / 2, -depth / 2),
+    new THREE.Vector3( width / 2, height / 2, -depth / 2),
+    new THREE.Vector3( width / 2, height / 2, -depth / 2),
+    new THREE.Vector3( width / 2, height / 2,  depth / 2),
+    new THREE.Vector3( width / 2, height / 2,  depth / 2),
+    new THREE.Vector3(-width / 2, height / 2,  depth / 2),
+    new THREE.Vector3(-width / 2, height / 2,  depth / 2),
+    new THREE.Vector3(-width / 2, height / 2, -depth / 2),
+    new THREE.Vector3(-width / 2, -height / 2, -depth / 2),
+    new THREE.Vector3(-width / 2,  height / 2, -depth / 2),
+    new THREE.Vector3( width / 2, -height / 2, -depth / 2),
+    new THREE.Vector3( width / 2,  height / 2, -depth / 2),
+    new THREE.Vector3( width / 2, -height / 2,  depth / 2),
+    new THREE.Vector3( width / 2,  height / 2,  depth / 2),
+    new THREE.Vector3(-width / 2, -height / 2,  depth / 2),
+    new THREE.Vector3(-width / 2,  height / 2,  depth / 2),
   ];
-
-  return (
-    <>
-      {pieces.map((piece, idx) => (
-        <mesh key={`border-${idx}`} position={[piece.position.x, borderY, piece.position.z]} castShadow receiveShadow>
-          <boxGeometry args={[piece.width, borderHeight, piece.depth]} />
-          <meshStandardMaterial color="#f5f5f5" roughness={0.7} metalness={0.0} />
-        </mesh>
-      ))}
-      {[
-        { x: -totalWidth / 2 - borderWidth / 2, z: -totalDepth / 2 - borderWidth / 2 },
-        { x:  totalWidth / 2 + borderWidth / 2, z: -totalDepth / 2 - borderWidth / 2 },
-        { x: -totalWidth / 2 - borderWidth / 2, z:  totalDepth / 2 + borderWidth / 2 },
-        { x:  totalWidth / 2 + borderWidth / 2, z:  totalDepth / 2 + borderWidth / 2 },
-      ].map((pos, idx) => (
-        <mesh key={`corner-${idx}`} position={[pos.x, borderY, pos.z]} castShadow receiveShadow>
-          <boxGeometry args={[borderWidth, borderHeight, borderWidth]} />
-          <meshStandardMaterial color="#f5f5f5" roughness={0.7} metalness={0.0} />
-        </mesh>
-      ))}
-    </>
+  const edges = new THREE.LineSegments(
+    new THREE.BufferGeometry().setFromPoints(edgePoints),
+    new THREE.LineBasicMaterial({ color: rimColor, transparent: true, opacity: 0.38, depthWrite: false })
   );
-};
+  edges.renderOrder = 4;
 
-// 环境渲染配置
-const SceneSetup = () => {
-  const { camera, gl } = useThree();
-  useEffect(() => {
-    camera.position.set(5, 7, 6);
-    camera.lookAt(0, 0.01, 0);
-    gl.setClearColor('#033403', 1); // 稳定的实体沙盘底色
-    gl.shadowMap.type = THREE.PCFSoftShadowMap;
-  }, [camera, gl]);
-  
-  return (
-    <>
-      <OrbitControls
-        enablePan={true}
-        enableZoom={false}
-        enableRotate={false}
-        target={[0, 0, 0]}
-      />
-      <ambientLight intensity={0.75} />
-      <directionalLight 
-        position={[6, 15, 5]} 
-        intensity={0.85} 
-        castShadow 
-        shadow-mapSize-width={2048} // 提高阴影分辨率，让细密植物的阴影更清晰
-        shadow-mapSize-height={2048}
-        shadow-camera-near={0.5}
-        shadow-camera-far={30}
-        shadow-camera-left={-12}
-        shadow-camera-right={12}
-        shadow-camera-top={12}
-        shadow-camera-bottom={-12}
-        shadow-bias={-0.0003}
-      />
-    </>
+  const highlightPoints = [
+    new THREE.Vector3(-width / 2 + 0.04, height / 2 + 0.006, -depth / 2),
+    new THREE.Vector3( width / 2 - 0.04, height / 2 + 0.006, -depth / 2),
+    new THREE.Vector3(-width / 2, -height / 2 + 0.08, -depth / 2 - 0.02),
+    new THREE.Vector3(-width / 2,  height / 2 - 0.04, -depth / 2 - 0.02),
+  ];
+  const highlights = new THREE.LineSegments(
+    new THREE.BufferGeometry().setFromPoints(highlightPoints),
+    new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.58, depthWrite: false })
   );
-};
+  highlights.renderOrder = 5;
 
-const getPositionByRowCol = (row, col, width = PLOT_WIDTH, depth = PLOT_DEPTH) => {
-  const x = (col - COLS / 2 + 0.5) * width;
-  const z = (row - ROWS / 2 + 0.5) * depth;
+  const sideShade = new THREE.Mesh(
+    new THREE.PlaneGeometry(width * 0.92, height * 0.94),
+    new THREE.MeshBasicMaterial({ color: rimColor, transparent: true, opacity: 0.12, side: THREE.DoubleSide })
+  );
+  sideShade.position.z = depth / 2 + 0.006;
+  sideShade.renderOrder = 3;
+
+  const faceLineGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, -height / 2 + 0.08, -depth / 2 - 0.018),
+    new THREE.Vector3(0,  height / 2 - 0.08, -depth / 2 - 0.018),
+    new THREE.Vector3(0, -height / 2 + 0.08,  depth / 2 + 0.018),
+    new THREE.Vector3(0,  height / 2 - 0.08,  depth / 2 + 0.018),
+    new THREE.Vector3(-width / 2 - 0.018, -height / 2 + 0.08, 0),
+    new THREE.Vector3(-width / 2 - 0.018,  height / 2 - 0.08, 0),
+    new THREE.Vector3( width / 2 + 0.018, -height / 2 + 0.08, 0),
+    new THREE.Vector3( width / 2 + 0.018,  height / 2 - 0.08, 0),
+  ]);
+  const faceLines = new THREE.LineSegments(faceLineGeometry, new THREE.LineBasicMaterial({ color: outlineColor, transparent: true, opacity: 0.16 }));
+  faceLines.renderOrder = 5;
+
+  const topSheen = new THREE.Mesh(
+    new THREE.PlaneGeometry(width * 0.78, depth * 0.78),
+    new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.22, side: THREE.DoubleSide })
+  );
+  topSheen.rotation.x = -Math.PI / 2;
+  topSheen.position.y = height / 2 + 0.012;
+  topSheen.renderOrder = 3;
+
+  const baseGlow = new THREE.Mesh(
+    new THREE.TorusGeometry(Math.min(width, depth) * 0.48, 0.026, 8, 52),
+    new THREE.MeshBasicMaterial({ color: glowColor, transparent: true, opacity: 0.08 })
+  );
+  baseGlow.rotation.x = Math.PI / 2;
+  baseGlow.position.y = -height / 2 + 0.045;
+  baseGlow.renderOrder = 1;
+
+  group.add(baseGlow, shell, sideShade, edges, faceLines, highlights, topSheen);
+  return group;
+}
+
+// ==================== 项目一的模型材质定制 ====================
+function customizeColumnModel(model, colorToken) {
+  const fillColor = new THREE.Color(COLUMN_FILL_COLORS[colorToken]);
+  const emissiveColor = new THREE.Color(COLUMN_EMISSIVE_COLORS[colorToken]);
+  model.traverse((child) => {
+    if (!child.isMesh) return;
+    const name = child.name.toLowerCase();
+    if (name.includes('dashboard outline') || name.includes('inner glow grid') || name.includes('top sheen') || name.includes('base contact')) {
+      child.visible = false;
+      return;
+    }
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    child.material = materials.map(mat => {
+      const newMat = mat.clone();
+      if (newMat.isMeshStandardMaterial || newMat.isMeshPhysicalMaterial) {
+        newMat.color.copy(fillColor);
+        newMat.emissive.copy(emissiveColor);
+        newMat.emissiveIntensity = 0.07;
+        newMat.opacity = 0.92;
+        newMat.transparent = true;
+        newMat.roughness = 0.74;
+        newMat.metalness = 0;
+      }
+      if (newMat.isMeshBasicMaterial) {
+        newMat.color.copy(fillColor);
+        newMat.opacity = 0.6;
+        newMat.transparent = true;
+      }
+      return newMat;
+    });
+    child.renderOrder = 2;
+  });
+}
+
+// ==================== 坐标计算 ====================
+function getWorldPosition(row, col) {
+  const offsetX = (row - GRID_CENTER_ROW) * BLOCK_ROW_OFFSET_X;
+  const x = (col - GRID_CENTER_COL) * BLOCK_SPACING_X + offsetX + GRID_OFFSET_X;
+  const z = (row - GRID_CENTER_ROW) * BLOCK_SPACING_Z + GRID_Z_OFFSET + GRID_OFFSET_Z;
   return { x, z };
-};
+}
 
+// ==================== 主组件 ====================
 const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
-  const getHumidity = (plotNumber) => {
+  const containerRef = useRef(null);
+  const sceneRef = useRef(null);
+  const rendererRef = useRef(null);
+  const labelRendererRef = useRef(null);
+  const cameraRef = useRef(null);
+  const columnsMapRef = useRef(new Map());
+  const modelTemplateRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const getMoisture = (plotNumber) => {
     const field = fieldsData.find(f => f.fieldId === plotNumber.toString());
     return field ? field.currentMoisture : 50;
   };
 
-  const mainPlots = useMemo(() => {
-    const plots = [];
-    for (let row = 0; row < ROWS; row++) {
-      for (let col = 0; col < COLS; col++) {
-        const plotNumber = row * COLS + col + 1;
-        const { x, z } = getPositionByRowCol(row, col, PLOT_WIDTH, PLOT_DEPTH);
-        const humidity = getHumidity(plotNumber);
-        plots.push({ plotNumber, x, z, humidity });
-      }
-    }
-    return plots;
-  }, [fieldsData]);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
 
-  const extraPlots = useMemo(() => {
-    const plots = [];
-    const startRow = -EXTRA_RINGS;
-    const endRow = ROWS - 1 + EXTRA_RINGS;
-    const startCol = -EXTRA_RINGS;
-    const endCol = COLS - 1 + EXTRA_RINGS;
-    
-    for (let row = startRow; row <= endRow; row++) {
-      for (let col = startCol; col <= endCol; col++) {
-        if (row >= 0 && row < ROWS && col >= 0 && col < COLS) continue;
-        const { x, z } = getPositionByRowCol(row, col, PLOT_WIDTH, PLOT_DEPTH);
-        plots.push({ x, z });
+    const scene = new THREE.Scene();
+    scene.background = null;
+    sceneRef.current = scene;
+
+    const camera = new THREE.OrthographicCamera();
+    camera.position.set(8, 6, 12);
+    camera.lookAt(0, 0, 4.3);
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setClearColor(0x000000, 0);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.left = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    labelRenderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(labelRenderer.domElement);
+    labelRendererRef.current = labelRenderer;
+
+    // 光照（与项目一完全一致）
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    sunLight.position.set(10, 20, 8);
+    const fillLight = new THREE.DirectionalLight(0xb8d4ff, 0.7);
+    fillLight.position.set(-8, 8, -10);
+    scene.add(ambientLight, sunLight, fillLight);
+
+    const groundPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 20),
+      new THREE.ShadowMaterial({ opacity: 0.3, color: 0x000000, transparent: true, side: THREE.DoubleSide })
+    );
+    groundPlane.rotation.x = -Math.PI / 2;
+    groundPlane.position.y = -0.2;
+    groundPlane.receiveShadow = true;
+    scene.add(groundPlane);
+
+    const handleResize = () => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      const aspect = width / Math.max(height, 1);
+      const verticalSize = 8;
+      camera.left = -verticalSize * aspect;
+      camera.right = verticalSize * aspect;
+      camera.top = verticalSize;
+      camera.bottom = -verticalSize;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      labelRenderer.setSize(width, height);
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    const loader = new GLTFLoader();
+    loader.load(COLUMN_MODEL_PATH, (gltf) => {
+      modelTemplateRef.current = gltf.scene.clone(true);
+      buildColumns();
+      setLoaded(true);
+    }, undefined, () => {
+      buildColumns();
+      setLoaded(true);
+    });
+
+    const buildColumns = () => {
+      columnsMapRef.current.forEach((item) => {
+        scene.remove(item.group);
+        scene.remove(item.ground);
+        scene.remove(item.label);
+        scene.remove(item.hitArea);
+      });
+      columnsMapRef.current.clear();
+
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+          const plotNumber = row * 4 + col + 1;
+          const moisture = getMoisture(plotNumber);
+          const risk = getRiskLevel(moisture);
+          const colorToken = getColorToken(moisture, risk);
+          const columnHeight = getColumnHeight(moisture);
+          const { x, z } = getWorldPosition(row, col);
+
+          const ground = new THREE.Mesh(
+            new THREE.BoxGeometry(BLOCK_WIDTH, BLOCK_HEIGHT, BLOCK_DEPTH),
+            new THREE.MeshStandardMaterial({ color: '#a5d6a5', roughness: 0.9, transparent: true, opacity: 0.4 })
+          );
+          ground.position.set(x, PLATFORM_TOP_Y + BLOCK_HEIGHT / 2, z);
+          ground.receiveShadow = true;
+          scene.add(ground);
+
+          const group = new THREE.Group();
+          group.position.set(x, PLATFORM_TOP_Y + BLOCK_HEIGHT / 2 + columnHeight / 2, z);
+
+          if (modelTemplateRef.current) {
+            const model = modelTemplateRef.current.clone(true);
+            const box = new THREE.Box3().setFromObject(model);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const scaleX = COLUMN_MODEL_WIDTH / size.x;
+            const scaleY = (columnHeight * COLUMN_HEIGHT_SCALE) / size.y;
+            const scaleZ = COLUMN_MODEL_DEPTH / size.z;
+            model.scale.set(scaleX, scaleY, scaleZ);
+            model.position.y = -columnHeight / 2;
+            customizeColumnModel(model, colorToken);
+            group.add(model);
+          }
+          const overlay = buildColumnOverlay(COLUMN_MODEL_WIDTH, columnHeight * COLUMN_HEIGHT_SCALE, COLUMN_MODEL_DEPTH, colorToken);
+          group.add(overlay);
+          scene.add(group);
+
+          const div = document.createElement('div');
+          div.className = 'farm3d-label';
+          const strong = document.createElement('strong');
+          strong.textContent = plotNumber.toString();
+          const span = document.createElement('span');
+          span.textContent = `${Math.round(moisture)}%`;
+          div.appendChild(strong);
+          div.appendChild(span);
+          const label = new CSS2DObject(div);
+          label.position.set(x, group.position.y + columnHeight * 0.22, z + 0.52);
+          scene.add(label);
+
+          const hitArea = new THREE.Mesh(
+            new THREE.BoxGeometry(COLUMN_MODEL_WIDTH, columnHeight + 0.8, COLUMN_MODEL_DEPTH),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+          );
+          hitArea.position.set(x, group.position.y, z);
+          hitArea.userData = { plotNumber };
+          scene.add(hitArea);
+
+          columnsMapRef.current.set(plotNumber, { group, ground, label, hitArea, columnHeight, colorToken });
+        }
       }
-    }
-    return plots;
+    };
+
+    let frameId = null;
+    const animate = () => {
+      frameId = requestAnimationFrame(animate);
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+        labelRendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    };
+    animate();
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const onClick = (event) => {
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(Array.from(columnsMapRef.current.values()).map(v => v.hitArea));
+      if (hits.length > 0) {
+        const plotNumber = hits[0].object.userData.plotNumber;
+        if (plotNumber && onPlotClick) onPlotClick(plotNumber);
+      }
+    };
+    container.addEventListener('click', onClick);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      container.removeEventListener('click', onClick);
+      if (frameId) cancelAnimationFrame(frameId);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current.domElement.remove();
+      }
+      if (labelRendererRef.current) {
+        labelRendererRef.current.domElement.remove();
+      }
+      if (sceneRef.current) sceneRef.current.clear();
+    };
   }, []);
 
-  const waterGaps = useMemo(() => {
-    const gaps = [];
-    for (let col = 0; col < COLS - 1; col++) {
-      const x = (col - COLS / 2 + 1) * PLOT_WIDTH;
-      for (let row = 0; row < ROWS; row++) {
-        const z = (row - ROWS / 2 + 0.5) * PLOT_DEPTH;
-        gaps.push({ position: { x, z }, width: GAP_WIDTH, depth: PLOT_DEPTH - GAP_WIDTH * 0.8 });
+  useEffect(() => {
+    if (!sceneRef.current || !loaded) return;
+
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        const plotNumber = row * 4 + col + 1;
+        const moisture = getMoisture(plotNumber);
+        const risk = getRiskLevel(moisture);
+        const newColorToken = getColorToken(moisture, risk);
+        const newHeight = getColumnHeight(moisture);
+        const visual = columnsMapRef.current.get(plotNumber);
+        if (!visual) continue;
+
+        const { group, ground, label, hitArea, columnHeight: oldHeight, colorToken: oldToken } = visual;
+
+        label.element.querySelector('span').textContent = `${Math.round(moisture)}%`;
+
+        if (Math.abs(newHeight - oldHeight) > 0.01 || newColorToken !== oldToken) {
+          while (group.children.length > 0) group.remove(group.children[0]);
+          if (modelTemplateRef.current) {
+            const model = modelTemplateRef.current.clone(true);
+            const box = new THREE.Box3().setFromObject(model);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const scaleX = COLUMN_MODEL_WIDTH / size.x;
+            const scaleY = (newHeight * COLUMN_HEIGHT_SCALE) / size.y;
+            const scaleZ = COLUMN_MODEL_DEPTH / size.z;
+            model.scale.set(scaleX, scaleY, scaleZ);
+            model.position.y = -newHeight / 2;
+            customizeColumnModel(model, newColorToken);
+            group.add(model);
+          }
+          const overlay = buildColumnOverlay(COLUMN_MODEL_WIDTH, newHeight * COLUMN_HEIGHT_SCALE, COLUMN_MODEL_DEPTH, newColorToken);
+          group.add(overlay);
+          group.position.y = PLATFORM_TOP_Y + BLOCK_HEIGHT / 2 + newHeight / 2;
+
+          hitArea.scale.y = (newHeight + 0.8) / (oldHeight + 0.8);
+          hitArea.position.y = group.position.y;
+          label.position.y = group.position.y + newHeight * 0.22;
+
+          visual.columnHeight = newHeight;
+          visual.colorToken = newColorToken;
+        }
       }
     }
-    for (let row = 0; row < ROWS - 1; row++) {
-      const z = (row - ROWS / 2 + 1) * PLOT_DEPTH;
-      for (let col = 0; col < COLS; col++) {
-        const x = (col - COLS / 2 + 0.5) * PLOT_WIDTH;
-        gaps.push({ position: { x, z }, width: PLOT_WIDTH - GAP_WIDTH * 0.8, depth: GAP_WIDTH });
-      }
-    }
-    return gaps;
-  }, []);
+  }, [fieldsData, loaded]);
 
-  return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', background: '#c8d6c8' }}>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 12, 15], fov: 45 }}>
-        <SceneSetup />
-
-        {/* 全局大平地底盘（彻底杜绝虚无感） */}
-        <mesh position={[0, GROUND_Y - 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <planeGeometry args={[200, 200]} />
-          <meshStandardMaterial color="#d5ecd5" roughness={1.0} metalness={0.0} />
-        </mesh>
-
-        {/* 高性能、边界严苛的高密度 3D 农田植被层 */}
-        <VegetationAndSoil mainPlots={mainPlots} extraPlots={extraPlots} />
-
-        {/* 蓝色的灌溉水渠 */}
-        {waterGaps.map((gap, idx) => (
-          <WaterGap key={`water-${idx}`} position={gap.position} width={gap.width} depth={gap.depth} />
-        ))}
-
-        {/* 白色高耸的田垄路基 */}
-        <RoadBaseBorder />
-
-        {/* 交互柱体 */}
-        {mainPlots.map((plot) => (
-          <PlotBox key={`bar-${plot.plotNumber}`} plotNumber={plot.plotNumber} humidity={plot.humidity} position={{ x: plot.x, z: plot.z }} onClick={onPlotClick} />
-        ))}
-      </Canvas>
-    </div>
-  );
+  return <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }} />;
 };
 
 export default ThreeFarmGrid;

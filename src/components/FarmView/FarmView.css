@@ -200,3 +200,52 @@
 .close-popup:hover {
   color: #333;
 }
+
+/* 让 Three.js 容器透明，显示 CSS 背景图 */
+.farm-main-container {
+  position: relative;
+  background-image: url('/assets/farm-aerial-base.png');
+  background-size: cover;
+  background-position: center 51%;
+  background-repeat: no-repeat;
+  background-color: #f7f9fb; /* 后备色 */
+}
+
+/* 确保 canvas 完全透明 */
+canvas {
+  background: transparent !important;
+}
+
+/* 仿项目一标签样式 */
+.farm3d-label {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 54px;
+  padding: 0;
+  border: 0;
+  color: #ffffff;
+  background: transparent;
+  filter: drop-shadow(0 2px 2px rgba(5, 18, 38, 0.42)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.36));
+  transform: translate(-50%, -50%);
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.farm3d-label strong {
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.24), 0 3px 8px rgba(2, 8, 23, 0.38);
+}
+
+.farm3d-label span {
+  color: rgba(255, 255, 255, 0.96);
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 2px 7px rgba(2, 8, 23, 0.42);
+  white-space: nowrap;
+}

@@ -1,28 +1,26 @@
-// 土壤参数模拟数据
+// src/utils/constants.js
+
+// 土壤参数模拟数据（16个地块，4x4）
 export const SOIL_PARAMS = {
-  '1': { temperature: 22.5, humidity: 85, deficiency: 15 },
-  '2': { temperature: 23.1, humidity: 65, deficiency: 35 },
-  '3': { temperature: 21.8, humidity: 70, deficiency: 30 },
-  '4': { temperature: 22.9, humidity: 60, deficiency: 40 },
-  '5': { temperature: 23.5, humidity: 55, deficiency: 45 },
-  '6': { temperature: 22.2, humidity: 75, deficiency: 25 },
-  '7': { temperature: 21.5, humidity: 80, deficiency: 20 },
-  '8': { temperature: 23.8, humidity: 30, deficiency: 70 },
-  '9': { temperature: 22.1, humidity: 50, deficiency: 50 },
-  '10': { temperature: 23.2, humidity: 65, deficiency: 35 },
-  '11': { temperature: 21.9, humidity: 72, deficiency: 28 },
-  '12': { temperature: 22.7, humidity: 68, deficiency: 32 },
-  '13': { temperature: 23.4, humidity: 58, deficiency: 42 },
-  '14': { temperature: 22.0, humidity: 63, deficiency: 37 },
-  '15': { temperature: 23.6, humidity: 45, deficiency: 55 },
-  '16': { temperature: 22.4, humidity: 77, deficiency: 23 },
-  '17': { temperature: 21.7, humidity: 82, deficiency: 18 },
-  '18': { temperature: 23.0, humidity: 40, deficiency: 60 },
-  '19': { temperature: 22.3, humidity: 53, deficiency: 47 },
-  '20': { temperature: 23.3, humidity: 48, deficiency: 52 }
+  '1': { temperature: 22.5, humidity: 62, deficiency: 15 },
+  '2': { temperature: 23.1, humidity: 58, deficiency: 35 },
+  '3': { temperature: 21.8, humidity: 47, deficiency: 30 },
+  '4': { temperature: 22.9, humidity: 39, deficiency: 40 },
+  '5': { temperature: 23.5, humidity: 71, deficiency: 45 },
+  '6': { temperature: 22.2, humidity: 52, deficiency: 25 },
+  '7': { temperature: 21.5, humidity: 45, deficiency: 20 },
+  '8': { temperature: 23.8, humidity: 31, deficiency: 70 },
+  '9': { temperature: 22.1, humidity: 36, deficiency: 50 },
+  '10': { temperature: 23.2, humidity: 49, deficiency: 35 },
+  '11': { temperature: 21.9, humidity: 24, deficiency: 28 },
+  '12': { temperature: 22.7, humidity: 44, deficiency: 32 },
+  '13': { temperature: 23.4, humidity: 28, deficiency: 42 },
+  '14': { temperature: 22.0, humidity: 33, deficiency: 37 },
+  '15': { temperature: 23.6, humidity: 18, deficiency: 55 },
+  '16': { temperature: 22.4, humidity: 41, deficiency: 23 },
 };
 
-// 灌溉处方数据
+// 灌溉处方数据（16个地块）
 export const IRRIGATION_PRESCRIPTION = {
   '1': { water: 8, fertilizer: 2.5 },
   '2': { water: 12, fertilizer: 3.2 },
@@ -40,13 +38,9 @@ export const IRRIGATION_PRESCRIPTION = {
   '14': { water: 14, fertilizer: 3.9 },
   '15': { water: 18, fertilizer: 4.8 },
   '16': { water: 8, fertilizer: 2.6 },
-  '17': { water: 6, fertilizer: 2.0 },
-  '18': { water: 22, fertilizer: 6.0 },
-  '19': { water: 17, fertilizer: 4.5 },
-  '20': { water: 13, fertilizer: 3.6 }
 };
 
-// 产量品质数据
+// 产量品质数据（16个地块）
 export const YIELD_QUALITY_DATA = {
   '1': { yield: 920, sugar: 14.5 },
   '2': { yield: 850, sugar: 13.2 },
@@ -64,10 +58,6 @@ export const YIELD_QUALITY_DATA = {
   '14': { yield: 830, sugar: 12.6 },
   '15': { yield: 720, sugar: 10.8 },
   '16': { yield: 910, sugar: 14.1 },
-  '17': { yield: 940, sugar: 14.4 },
-  '18': { yield: 650, sugar: 9.8 },
-  '19': { yield: 770, sugar: 11.5 },
-  '20': { yield: 800, sugar: 12.2 }
 };
 
-export const FARM_PLOTS = Array.from({ length: 20 }, (_, i) => (i + 1).toString());
+export const FARM_PLOTS = Array.from({ length: 16 }, (_, i) => (i + 1).toString());

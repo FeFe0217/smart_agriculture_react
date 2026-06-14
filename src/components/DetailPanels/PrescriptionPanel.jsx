@@ -58,7 +58,7 @@ function PrescriptionPanel() {
         {/* 网格容器：固定宽度并居中，减小整体尺寸 */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '8px',
           marginBottom: '20px',
           maxWidth: '500px',      // 固定最大宽度，使网格变小
