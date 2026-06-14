@@ -4,7 +4,7 @@
   height: 100%;
   position: relative;
   background-image: url('/assets/farm-aerial-base.png');
-  background-size: cover;
+  background-size: contain;
   background-position: center 51%;
   background-repeat: no-repeat;
   background-color: #f7f9fb;
@@ -75,7 +75,7 @@ canvas {
   display: inline-block;
   width: 4px;
   height: 16px;
-  background-color: #2e7d32;
+  background-color: #3f9643;
   border-radius: 2px;
 }
 

@@ -207,7 +207,13 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
   const modelTemplate = useRef(null);
   const visualsMap = useRef(new Map());
   const selectables = useRef([]);
-  let scene, camera, renderer, labelRenderer, frameId;
+  // 存储 Three.js 对象的引用，以便在 ResizeObserver 中访问
+  const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
+  const labelRendererRef = useRef(null);
+  const frameIdRef = useRef(null);
+  const resizeObserverRef = useRef(null);
 
   const getMoisture = (plotNumber, fields) => {
     const field = fields?.find(f => f.fieldId === plotNumber.toString());
@@ -219,20 +225,26 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
     const container = containerRef.current;
 
     // 初始化场景
-    scene = new THREE.Scene();
+    const scene = new THREE.Scene();
     scene.background = null;
-    camera = new THREE.OrthographicCamera();
+    const camera = new THREE.OrthographicCamera();
     camera.position.set(8, 6, 12);
     camera.lookAt(0, 0, 4.3);
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
-    labelRenderer = new CSS2DRenderer();
+    const labelRenderer = new CSS2DRenderer();
     labelRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none';
     labelRenderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(labelRenderer.domElement);
+
+    // 存储引用
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+    rendererRef.current = renderer;
+    labelRendererRef.current = labelRenderer;
 
     // 灯光（用户最终确认值：环境光1.0，方向光0.9）
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
@@ -252,6 +264,23 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
     groundPlane.receiveShadow = true;
     scene.add(groundPlane);
 
+    // 定义更新相机和渲染器尺寸的函数（固定垂直视野）
+    const updateCameraAndSize = () => {
+      if (!containerRef.current || !cameraRef.current || !rendererRef.current || !labelRendererRef.current) return;
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
+      if (width === 0 || height === 0) return;
+      const aspect = width / height;
+      const verticalSize = 8; // 固定垂直视野范围
+      cameraRef.current.left = -verticalSize * aspect;
+      cameraRef.current.right = verticalSize * aspect;
+      cameraRef.current.top = verticalSize;
+      cameraRef.current.bottom = -verticalSize;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
+      labelRendererRef.current.setSize(width, height);
+    };
+
     // 加载 GLB 模型
     const loader = new GLTFLoader();
     loader.load(MODEL_PATH, (gltf) => {
@@ -264,9 +293,11 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
 
     // 构建所有地块
     const rebuildAll = () => {
+      const sceneNow = sceneRef.current;
+      if (!sceneNow) return;
       // 清除旧数据
       visualsMap.current.forEach(v => {
-        scene.remove(v.group, v.ground, v.label, v.hit);
+        sceneNow.remove(v.group, v.ground, v.label, v.hit);
       });
       visualsMap.current.clear();
       selectables.current = [];
@@ -288,7 +319,7 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
           const ground = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_WIDTH, BLOCK_HEIGHT, BLOCK_DEPTH), groundMat);
           ground.position.set(x, PLATFORM_TOP_Y + BLOCK_HEIGHT / 2, z);
           ground.receiveShadow = true;
-          scene.add(ground);
+          sceneNow.add(ground);
 
           // 柱体组
           const group = new THREE.Group();
@@ -310,7 +341,7 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
           // 始终叠加装饰层（确保视觉效果）
           const overlay = buildColumnOverlay(COLUMN_MODEL_WIDTH, columnHeight * COLUMN_HEIGHT_SCALE, COLUMN_MODEL_DEPTH, colorToken);
           group.add(overlay);
-          scene.add(group);
+          sceneNow.add(group);
 
           // 标签
           const div = document.createElement('div');
@@ -318,7 +349,7 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
           div.innerHTML = `<strong>${plotNumber}</strong><span>${Math.round(moisture)}%</span>`;
           const label = new CSS2DObject(div);
           label.position.set(x, group.position.y + columnHeight * 0.22, z + 0.52);
-          scene.add(label);
+          sceneNow.add(label);
 
           // 点击区域
           const hit = new THREE.Mesh(
@@ -327,12 +358,14 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
           );
           hit.position.set(x, group.position.y, z);
           hit.userData = { plotNumber };
-          scene.add(hit);
+          sceneNow.add(hit);
           selectables.current.push(hit);
 
           visualsMap.current.set(plotNumber, { group, ground, label, hit, columnHeight, colorToken });
         }
       }
+      // 重建后强制更新相机和尺寸（确保投影正确）
+      updateCameraAndSize();
     };
 
     // 更新数据（不重建整个场景，只更新柱体颜色、高度等）
@@ -349,7 +382,10 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
         const { group, ground, label, hit, columnHeight: oldHeight, colorToken: oldToken } = visual;
 
         // 更新标签文字
-        label.element.querySelector('span').textContent = `${Math.round(moisture)}%`;
+        if (label.element) {
+          const span = label.element.querySelector('span');
+          if (span) span.textContent = `${Math.round(moisture)}%`;
+        }
 
         if (Math.abs(newHeight - oldHeight) > 0.01 || newColorToken !== oldToken) {
           // 重建柱体组
@@ -383,27 +419,25 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
       }
     };
 
-    // 响应窗口大小
-    const handleResize = () => {
-      const width = container.clientWidth, height = container.clientHeight;
-      const aspect = width / Math.max(height, 1);
-      const verticalSize = 8;
-      camera.left = -verticalSize * aspect;
-      camera.right = verticalSize * aspect;
-      camera.top = verticalSize;
-      camera.bottom = -verticalSize;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-      labelRenderer.setSize(width, height);
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
+    // 使用 ResizeObserver 监听容器尺寸变化（分屏拖动时触发）
+    const resizeObserver = new ResizeObserver(() => {
+      updateCameraAndSize();
+    });
+    resizeObserver.observe(container);
+    resizeObserverRef.current = resizeObserver;
+
+    // 初始调用一次，确保正确的投影矩阵
+    updateCameraAndSize();
 
     // 动画循环
     const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-      labelRenderer.render(scene, camera);
+      frameIdRef.current = requestAnimationFrame(animate);
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+      if (labelRendererRef.current && sceneRef.current && cameraRef.current) {
+        labelRendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     };
     animate();
 
@@ -414,7 +448,7 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
       const rect = container.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+      raycaster.setFromCamera(mouse, cameraRef.current);
       const hits = raycaster.intersectObjects(selectables.current);
       if (hits.length) {
         const plotNumber = hits[0].object.userData.plotNumber;
@@ -426,17 +460,26 @@ const ThreeFarmGrid = ({ fieldsData, onPlotClick }) => {
     // 暴露更新函数供外部调用
     window.__updateThreeFarm = updateFields;
 
-    // 清理
+    // 清理函数
     return () => {
-      window.removeEventListener('resize', handleResize);
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
       container.removeEventListener('click', onClick);
-      if (frameId) cancelAnimationFrame(frameId);
-      renderer.dispose();
-      labelRenderer.domElement.remove();
-      renderer.domElement.remove();
-      scene.clear();
+      if (frameIdRef.current) cancelAnimationFrame(frameIdRef.current);
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current.domElement.remove();
+      }
+      if (labelRendererRef.current) {
+        labelRendererRef.current.domElement.remove();
+      }
+      if (sceneRef.current) {
+        sceneRef.current.clear();
+      }
+      window.__updateThreeFarm = null;
     };
-  }, []); // 仅初始化一次
+  }, []); // 空依赖，仅初始化一次
 
   // 当 fieldsData 变化时，调用更新函数
   useEffect(() => {
